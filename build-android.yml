@@ -1,0 +1,73 @@
+name: Build Bullet Storm Flyer APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Bullet-Storm-Flyer-Android-Ready.zip'
+      - '.github/workflows/build-android.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract Android-ready project
+        run: |
+          test -f Bullet-Storm-Flyer-Android-Ready.zip
+          mkdir source
+          unzip -q Bullet-Storm-Flyer-Android-Ready.zip -d source
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.6.5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: source/Bullet-Storm-Flyer/pnpm-lock.yaml
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install dependencies
+        working-directory: source/Bullet-Storm-Flyer
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build game
+        working-directory: source/Bullet-Storm-Flyer/artifacts/angry-birds-shooter
+        env:
+          PORT: '5000'
+          BASE_PATH: './'
+        run: pnpm exec vite build --config vite.config.ts
+
+      - name: Create Android project
+        working-directory: source/Bullet-Storm-Flyer/artifacts/angry-birds-shooter
+        run: pnpm exec cap add android
+
+      - name: Sync Android project
+        working-directory: source/Bullet-Storm-Flyer/artifacts/angry-birds-shooter
+        run: pnpm exec cap sync android
+
+      - name: Build debug APK
+        working-directory: source/Bullet-Storm-Flyer/artifacts/angry-birds-shooter/android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bullet-Storm-Flyer-APK
+          path: source/Bullet-Storm-Flyer/artifacts/angry-birds-shooter/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
