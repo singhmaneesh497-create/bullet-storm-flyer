@@ -1,0 +1,70 @@
+name: Build Bullet Storm Flyer APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'Bullet-Storm-Flyer-Android-Ready-FIXED.zip'
+      - '.github/workflows/build-android.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract fixed Android-ready project
+        run: unzip -q Bullet-Storm-Flyer-Android-Ready-FIXED.zip -d .
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.6.5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: Bullet-Storm-Flyer/pnpm-lock.yaml
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install dependencies
+        working-directory: Bullet-Storm-Flyer
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build web game
+        working-directory: Bullet-Storm-Flyer/artifacts/angry-birds-shooter
+        env:
+          PORT: '5000'
+          BASE_PATH: './'
+        run: pnpm exec vite build --config vite.config.ts
+
+      - name: Generate Android project
+        working-directory: Bullet-Storm-Flyer/artifacts/angry-birds-shooter
+        run: pnpm exec cap add android
+
+      - name: Sync game into Android project
+        working-directory: Bullet-Storm-Flyer/artifacts/angry-birds-shooter
+        run: pnpm exec cap sync android
+
+      - name: Build debug APK
+        working-directory: Bullet-Storm-Flyer/artifacts/angry-birds-shooter/android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: bullet-storm-flyer-debug-apk
+          path: Bullet-Storm-Flyer/artifacts/angry-birds-shooter/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
