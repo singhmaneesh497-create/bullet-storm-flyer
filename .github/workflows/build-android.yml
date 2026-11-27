@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'Bullet-Storm-Flyer-Landscape-Final.zip'
+      - 'Bullet-Storm-Flyer-New-Upgrade-Nov-28-Power-Update.zip'
       - '.github/workflows/build-android.yml'
 
 permissions:
@@ -19,9 +19,9 @@ jobs:
 
       - name: Extract Android-ready project
         run: |
-          test -f Bullet-Storm-Flyer-Landscape-Final.zip
+          test -f Bullet-Storm-Flyer-New-Upgrade-Nov-28-Power-update.zip
           mkdir source
-          unzip -q Bullet-Storm-Flyer-Landscape-Final.zip -d source
+          unzip -q Bullet-Storm-Flyer-New-Upgrade-Now28-Power-Update.zip -d source
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
